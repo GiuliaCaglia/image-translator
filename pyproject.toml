@@ -9,6 +9,10 @@ readme = "README.md"
 python = "^3.11"
 kaggle = "^1.6.12"
 click = "^8.1.7"
+torchvision = "^0.18.0"
+torch = "^2.3.0"
+pillow = "^10.3.0"
+numpy = "^1.26.4"
 
 
 [tool.poetry.group.dev]
