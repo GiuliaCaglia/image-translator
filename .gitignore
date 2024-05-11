@@ -1,6 +1,9 @@
 # Project assets
 assets/
 
+# IDE assets
+.vscode/
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]

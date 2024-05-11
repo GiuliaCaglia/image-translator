@@ -4,7 +4,12 @@ from pathlib import Path
 
 COMPETITION_NAME = "gan-getting-started"
 
+
 class Paths:
     ROOT = Path(__file__).resolve().parents[3]
     ASSETS = ROOT.joinpath("assets")
     IMAGES = ASSETS.joinpath("images")
+
+
+class Variables:
+    LATENT_DIMENSIONS: int = 2
