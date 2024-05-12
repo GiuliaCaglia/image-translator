@@ -1,8 +1,15 @@
 """Networks module for image translator."""
 
+import logging
+from typing import Generator, List, Literal
+
+import torch
 from torch import nn
+from torch.utils.data import DataLoader
 
 from image_translator.utils.constants import Variables
+
+logging.basicConfig(format="%(asctime)s %(name)s - %(message)s", level=logging.INFO)
 
 
 class Encoder(nn.Module):
@@ -71,3 +78,62 @@ class Decoder(nn.Module):
         out = self.mainline(adapted)
 
         return out
+
+
+class AutoEncoder:
+    CRITERION = nn.MSELoss()
+
+    def __init__(
+        self, encoder: Encoder, decoder: Decoder, device: Literal["cpu", "cuda"] = "cpu"
+    ) -> None:
+        self.encoder = encoder.to(device=device)
+        self.decoder = decoder.to(device=device)
+        self.device = device
+        self.optimizer = torch.optim.Adam(lr=1e-2, params=self.parameters())
+
+        self.logger = logging.getLogger(self.__name__())
+
+    def __name__(self) -> str:
+        return "AutoEncoder"
+
+    def parameters(self) -> Generator:
+        encoder_parameters = self.encoder.parameters()
+        decoder_parameters = self.decoder.parameters()
+
+        for param in encoder_parameters:
+            yield param
+
+        for param in decoder_parameters:
+            yield param
+
+    def fit(
+        self, data_loader: DataLoader, epochs: int = 100, log_every: int = 10
+    ) -> List[float]:
+        losses = []
+        for epoch in range(1, epochs + 1):
+            epoch_loss = 0.0
+            for original in data_loader:
+                self.optimizer.zero_grad()
+                reconstructed = self.forward(original)
+                batch_loss = self.CRITERION(reconstructed, original)
+                batch_loss.backward()
+                self.optimizer.step()
+                epoch_loss += float(batch_loss)
+
+            if epoch % log_every == 0:
+                self.logger.info("Epoch %s/%s; loss: %s", epoch, epochs, epoch_loss)
+            losses.append(epoch_loss)
+
+        return losses
+
+    def compress(self, original: torch.Tensor) -> torch.Tensor:
+        return self.encoder(original.to(self.device))
+
+    def decompress(self, compressed: torch.Tensor) -> torch.Tensor:
+        return self.decoder(compressed.to(self.device))
+
+    def forward(self, original: torch.Tensor) -> torch.Tensor:
+        return self.decompress(self.compress(original=original))
+
+    def __call__(self, original: torch.Tensor) -> torch.Tensor:
+        return self.forward(original)
