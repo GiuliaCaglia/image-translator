@@ -92,6 +92,7 @@ class AutoEncoder:
         self.optimizer = torch.optim.Adam(lr=1e-2, params=self.parameters())
 
         self.logger = logging.getLogger(self.__name__())
+        self.logger.info("AutoEncoder initialized on device: {}".format(self.device))
 
     def __name__(self) -> str:
         return "AutoEncoder"
