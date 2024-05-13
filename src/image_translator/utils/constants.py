@@ -12,4 +12,5 @@ class Paths:
 
 
 class Variables:
+    SEED = 42
     LATENT_DIMENSIONS: int = 2
