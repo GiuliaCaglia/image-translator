@@ -13,6 +13,7 @@ torchvision = "^0.18.0"
 torch = "^2.3.0"
 pillow = "^10.3.0"
 numpy = "^1.26.4"
+dill = "^0.3.8"
 
 
 [tool.poetry.group.dev]
@@ -29,6 +30,7 @@ pytest = "^8.2.0"
 
 [tool.poetry.scripts]
 fetch-data = "image_translator.scripts.fetch_data:fetch_data"
+train = "image_translator.scripts.train:train"
 
 [build-system]
 requires = ["poetry-core"]
