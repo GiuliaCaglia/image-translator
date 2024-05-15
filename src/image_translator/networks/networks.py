@@ -1,35 +1,48 @@
 """Networks module for image translator."""
 
-from typing import Generator, Literal
+from typing import Generator, Literal,  List, Tuple
 
 import torch
 from torch import nn
 
 from image_translator.utils.constants import Variables
 from image_translator.utils.utils import get_logger
+from functools import reduce
+
+
+class ConvBlock(nn.Module):
+    def __init__(self, in_channels: int, num_hidden_layers: int, out_channels: int, initializer: nn.Module= nn.Identity(), final: nn.Module = nn.Identity(), kernel_size: int = 3, **kwargs):
+        super().__init__()
+        input_layer = [
+            nn.Conv2d(in_channels=in_channels, out_channels=out_channels, kernel_size=kernel_size, **kwargs),
+            nn.BatchNorm2d(out_channels),
+            nn.ReLU()
+        ]
+        hidden_layers: List[nn.Module] = []
+        for _ in range(num_hidden_layers):
+            hidden_layers.append(nn.Conv2d(in_channels=out_channels, out_channels=out_channels, kernel_size=kernel_size, **kwargs))
+            hidden_layers.append(nn.BatchNorm2d(out_channels))
+            hidden_layers.append(nn.ReLU())
+
+        self.mainline = nn.Sequential(initializer, *input_layer, *hidden_layers, final)
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        out = x.clone()
+        return self.mainline(out)
 
 
 class Encoder(nn.Module):
 
     def __init__(
-        self, latent_dimensions: int = Variables.LATENT_DIMENSIONS, *args, **kwargs
+        self, conv_blocks: List[ConvBlock], adapter_shape: Tuple[int, int, int], latent_dimensions: int = Variables.LATENT_DIMENSIONS, *args, **kwargs 
     ):
         super().__init__(*args, **kwargs)
-        self.mainline = nn.Sequential(
-            nn.Conv2d(in_channels=3, out_channels=16, kernel_size=3, padding="same"),
-            nn.BatchNorm2d(16),
-            nn.ReLU(),
-            nn.Conv2d(in_channels=16, out_channels=32, kernel_size=3, padding="same"),
-            nn.BatchNorm2d(32),
-            nn.ReLU(),
-            nn.Conv2d(in_channels=32, out_channels=64, kernel_size=3, padding="same"),
-            nn.BatchNorm2d(64),
-            nn.MaxPool2d(kernel_size=2, stride=2),
-        )
+        self.mainline = nn.Sequential(*conv_blocks)
+        adapter_size = reduce(lambda a, b: a*b, adapter_shape)
 
         self.fc = nn.Sequential(
             nn.Flatten(),
-            nn.Linear(64 * 128 * 128, latent_dimensions),
+            nn.Linear(in_features=adapter_size, out_features=latent_dimensions),
         )
 
     def forward(self, x):
@@ -39,39 +52,21 @@ class Encoder(nn.Module):
 
 
 class Decoder(nn.Module):
-    ADAPTER_SHAPE = (64, 128, 128)
 
     def __init__(
-        self, latent_dimensions: int = Variables.LATENT_DIMENSIONS, *args, **kwargs
+        self, conv_blocks: List[ConvBlock], adapter_shape: Tuple[int, int, int], latent_dimensions: int = Variables.LATENT_DIMENSIONS, *args, **kwargs
     ) -> None:
         super().__init__(*args, **kwargs)
-        self.adapter = nn.Linear(latent_dimensions, 64 * 128 * 128)
+        self.adapter_shape = adapter_shape
+        adapter_size = reduce(lambda a, b: a*b, adapter_shape)
+        self.adapter = nn.Linear(latent_dimensions, adapter_size)
         self.mainline = nn.Sequential(
-            nn.ConvTranspose2d(
-                in_channels=64, out_channels=32, kernel_size=3, stride=1, padding=1
-            ),
-            nn.BatchNorm2d(32),
-            nn.ReLU(),
-            nn.ConvTranspose2d(
-                in_channels=32, out_channels=16, kernel_size=3, stride=1, padding=1
-            ),
-            nn.BatchNorm2d(16),
-            nn.ReLU(),
-            nn.ConvTranspose2d(
-                in_channels=16,
-                out_channels=3,
-                kernel_size=3,
-                stride=2,
-                padding=1,
-                output_padding=1,
-            ),
-            nn.BatchNorm2d(3),
-            nn.ReLU(),
+            *conv_blocks,
             nn.Sigmoid(),
         )
 
     def forward(self, x):
-        adapted = self.adapter(x).view(-1, *self.ADAPTER_SHAPE)
+        adapted = self.adapter(x).view(-1, *self.adapter_shape)
         out = self.mainline(adapted)
 
         return out
