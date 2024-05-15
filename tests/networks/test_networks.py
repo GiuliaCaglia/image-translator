@@ -1,11 +1,11 @@
 """Test Module for networks."""
 
+import pytest
 import torch
+from torch import nn
 
 from image_translator.networks import networks
 from image_translator.utils.constants import Variables
-from torch import nn
-import pytest
 
 
 class TestNetworks:
@@ -28,18 +28,22 @@ class TestNetworks:
             out_channels=3,
             num_hidden_layers=2,
             initializer=nn.UpsamplingNearest2d(scale_factor=2),
-            padding=1
+            padding=1,
         )
 
     def test_encoder_forward_has_shape(self):
-        encoder = networks.Encoder(conv_blocks=[self.encoder_block], adapter_shape=(6, 128, 128))
+        encoder = networks.Encoder(
+            conv_blocks=[self.encoder_block], adapter_shape=(6, 128, 128)
+        )
 
         actual = encoder(self.MOCK_IMAGES)
 
         assert actual.shape == self.ENCODED_SHAPE
 
     def test_decoder_forward_has_shape(self):
-        decoder = networks.Decoder(conv_blocks=[self.decoder_block], adapter_shape=(6, 128, 128))
+        decoder = networks.Decoder(
+            conv_blocks=[self.decoder_block], adapter_shape=(6, 128, 128)
+        )
 
         actual = decoder(self.MOCK_ENCODED)
 

@@ -1,26 +1,47 @@
 """Networks module for image translator."""
 
-from typing import Generator, Literal,  List, Tuple
+from functools import reduce
+from typing import Generator, List, Literal, Tuple
 
 import torch
 from torch import nn
 
 from image_translator.utils.constants import Variables
 from image_translator.utils.utils import get_logger
-from functools import reduce
 
 
 class ConvBlock(nn.Module):
-    def __init__(self, in_channels: int, num_hidden_layers: int, out_channels: int, initializer: nn.Module= nn.Identity(), final: nn.Module = nn.Identity(), kernel_size: int = 3, **kwargs):
+    def __init__(
+        self,
+        in_channels: int,
+        num_hidden_layers: int,
+        out_channels: int,
+        initializer: nn.Module = nn.Identity(),
+        final: nn.Module = nn.Identity(),
+        kernel_size: int = 3,
+        **kwargs
+    ):
         super().__init__()
         input_layer = [
-            nn.Conv2d(in_channels=in_channels, out_channels=out_channels, kernel_size=kernel_size, **kwargs),
+            nn.Conv2d(
+                in_channels=in_channels,
+                out_channels=out_channels,
+                kernel_size=kernel_size,
+                **kwargs,
+            ),
             nn.BatchNorm2d(out_channels),
-            nn.ReLU()
+            nn.ReLU(),
         ]
         hidden_layers: List[nn.Module] = []
         for _ in range(num_hidden_layers):
-            hidden_layers.append(nn.Conv2d(in_channels=out_channels, out_channels=out_channels, kernel_size=kernel_size, **kwargs))
+            hidden_layers.append(
+                nn.Conv2d(
+                    in_channels=out_channels,
+                    out_channels=out_channels,
+                    kernel_size=kernel_size,
+                    **kwargs,
+                )
+            )
             hidden_layers.append(nn.BatchNorm2d(out_channels))
             hidden_layers.append(nn.ReLU())
 
@@ -34,11 +55,16 @@ class ConvBlock(nn.Module):
 class Encoder(nn.Module):
 
     def __init__(
-        self, conv_blocks: List[ConvBlock], adapter_shape: Tuple[int, int, int], latent_dimensions: int = Variables.LATENT_DIMENSIONS, *args, **kwargs 
+        self,
+        conv_blocks: List[ConvBlock],
+        adapter_shape: Tuple[int, int, int],
+        latent_dimensions: int = Variables.LATENT_DIMENSIONS,
+        *args,
+        **kwargs
     ):
         super().__init__(*args, **kwargs)
         self.mainline = nn.Sequential(*conv_blocks)
-        adapter_size = reduce(lambda a, b: a*b, adapter_shape)
+        adapter_size = reduce(lambda a, b: a * b, adapter_shape)
 
         self.fc = nn.Sequential(
             nn.Flatten(),
@@ -54,11 +80,16 @@ class Encoder(nn.Module):
 class Decoder(nn.Module):
 
     def __init__(
-        self, conv_blocks: List[ConvBlock], adapter_shape: Tuple[int, int, int], latent_dimensions: int = Variables.LATENT_DIMENSIONS, *args, **kwargs
+        self,
+        conv_blocks: List[ConvBlock],
+        adapter_shape: Tuple[int, int, int],
+        latent_dimensions: int = Variables.LATENT_DIMENSIONS,
+        *args,
+        **kwargs
     ) -> None:
         super().__init__(*args, **kwargs)
         self.adapter_shape = adapter_shape
-        adapter_size = reduce(lambda a, b: a*b, adapter_shape)
+        adapter_size = reduce(lambda a, b: a * b, adapter_shape)
         self.adapter = nn.Linear(latent_dimensions, adapter_size)
         self.mainline = nn.Sequential(
             *conv_blocks,

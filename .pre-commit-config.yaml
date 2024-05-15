@@ -3,7 +3,7 @@ repos:
     rev: 24.4.2
     hooks:
       - id: black
-        language_version: 3.11.9
+        language_version: "3.11"
 
   - repo: git@github.com:pre-commit/mirrors-mypy.git
     rev: v1.10.0
