@@ -151,7 +151,9 @@ class Trainer:
                 baseline_loss = 0.0
                 for batch in test_loader:
                     out = autoencoder(batch)
-                    baseline_loss += float(self.CRITERION(out, batch.to(device)))
+                    baseline_loss += float(self.CRITERION(out, batch.to(device))) / len(
+                        batch
+                    )
 
             self.LOGGER.info("Baseline_loss: %s", baseline_loss)
         else:
@@ -167,7 +169,7 @@ class Trainer:
                 batch_loss = self.CRITERION(reconstructed, original.to(device))
                 batch_loss.backward()
                 optimizer.step()
-                epoch_loss += float(batch_loss)
+                epoch_loss += float(batch_loss) / len(original)
 
             if epoch % self.LOG_EVERY == 0:
                 self.LOGGER.info("Epoch %s/%s; loss: %s", epoch, epochs, epoch_loss)
@@ -179,7 +181,9 @@ class Trainer:
                 test_loss = 0.0
                 for batch in test_loader:
                     out = autoencoder(batch)
-                    test_loss += float(self.CRITERION(out, batch.to(device)))
+                    test_loss += float(self.CRITERION(out, batch.to(device))) / len(
+                        batch
+                    )
 
                 self.LOGGER.info("Test Loss: %s", test_loss)
         else:
