@@ -53,6 +53,68 @@ class Trainer:
     LOG_EVERY = 10
     LOGGER = get_logger("Trainer")
 
+    def __init__(self) -> None:
+        self.encoder_blocks = [
+            networks.ConvBlock(
+                in_channels=3,
+                num_hidden_layers=3,
+                out_channels=8,
+                initializer=nn.MaxPool2d(2),
+                padding=1,
+            ),
+            networks.ConvBlock(
+                in_channels=8,
+                num_hidden_layers=3,
+                out_channels=8,
+                initializer=nn.MaxPool2d(2),
+                padding=1,
+            ),
+            networks.ConvBlock(
+                in_channels=8,
+                num_hidden_layers=3,
+                out_channels=8,
+                initializer=nn.MaxPool2d(2),
+                padding=1,
+            ),
+            networks.ConvBlock(
+                in_channels=8,
+                num_hidden_layers=3,
+                out_channels=8,
+                initializer=nn.MaxPool2d(2),
+                padding=1,
+            ),
+        ]
+        self.decoder_blocks = [
+            networks.ConvBlock(
+                in_channels=8,
+                num_hidden_layers=3,
+                out_channels=8,
+                initializer=nn.UpsamplingNearest2d(scale_factor=2),
+                padding=1,
+            ),
+            networks.ConvBlock(
+                in_channels=8,
+                num_hidden_layers=3,
+                out_channels=8,
+                initializer=nn.UpsamplingNearest2d(scale_factor=2),
+                padding=1,
+            ),
+            networks.ConvBlock(
+                in_channels=8,
+                num_hidden_layers=3,
+                out_channels=8,
+                initializer=nn.UpsamplingNearest2d(scale_factor=2),
+                padding=1,
+            ),
+            networks.ConvBlock(
+                in_channels=8,
+                num_hidden_layers=3,
+                out_channels=3,
+                initializer=nn.UpsamplingNearest2d(scale_factor=2),
+                padding=1,
+            ),
+        ]
+
     def get_data(
         self, train_size: float = 0.9, batch_size: int = 64
     ) -> Tuple[DataLoader, DataLoader]:
@@ -74,8 +136,12 @@ class Trainer:
         epochs: int = 10,
         device: Literal["cpu", "cuda"] = "cpu",
     ) -> TrainArtifact:
-        encoder = networks.Encoder()
-        decoder = networks.Decoder()
+        encoder = networks.Encoder(
+            conv_blocks=self.encoder_blocks, adapter_shape=(8, 16, 16)
+        )
+        decoder = networks.Decoder(
+            conv_blocks=self.decoder_blocks, adapter_shape=(8, 16, 16)
+        )
         autoencoder = networks.AutoEncoder(
             encoder=encoder, decoder=decoder, device=device
         )
