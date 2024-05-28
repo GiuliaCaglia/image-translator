@@ -141,8 +141,8 @@ class Trainer:
         train_images, test_images = datasets.TrainTestSplitPaths.get_split(
             train_size=train_size
         )
-        train_dataset = datasets.ImageDataset(train_images[:1])
-        test_dataset = datasets.ImageDataset(test_images[:1])
+        train_dataset = datasets.ImageDataset(train_images)
+        test_dataset = datasets.ImageDataset(test_images)
         train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
         test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=True)
 
