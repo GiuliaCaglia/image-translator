@@ -20,3 +20,6 @@ def train(epochs: int, batch_size: int, device: str, lr: float):
 
     train_artifacts.dump_metrics(Paths.METRICS)
     train_artifacts.dump_model(Paths.MODEL)
+    train_artifacts.dump_train_samples(Paths.TRAIN_SAMPLES)
+    train_artifacts.dump_test_samples(Paths.TEST_SAMPLES)
+    train_artifacts.dump_loss_plot(Paths.LOSS_PLOT)

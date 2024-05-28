@@ -12,8 +12,10 @@ class Paths:
     RESULTS = ASSETS.joinpath("results")
     MODEL = RESULTS.joinpath("model.pkl")
     METRICS = RESULTS.joinpath("metrics.json")
+    TRAIN_SAMPLES = RESULTS.joinpath("train_samples.jpg")
+    TEST_SAMPLES = RESULTS.joinpath("test_samples.jpg")
+    LOSS_PLOT = RESULTS.joinpath("loss_plot.png")
 
 
 class Variables:
     SEED = 42
-    LATENT_DIMENSIONS: int = 2

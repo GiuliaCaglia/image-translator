@@ -5,10 +5,15 @@ from pathlib import Path
 from typing import List, Literal, Optional, Tuple
 
 import dill
+import matplotlib.pyplot as plt
 import torch
+import torchvision.transforms.functional as F
+from PIL import Image
 from torch import nn
 from torch.optim import Adam
 from torch.utils.data.dataloader import DataLoader
+from torchvision.utils import make_grid
+from tqdm import tqdm
 
 from image_translator.data import datasets
 from image_translator.networks import networks
@@ -20,13 +25,20 @@ class TrainArtifact:
         self,
         model: nn.Module,
         train_losses: List[float],
+        train_samples: torch.Tensor,
         baseline_loss: Optional[float] = None,
         test_loss: Optional[float] = None,
+        test_samples: Optional[torch.Tensor] = None,
     ) -> None:
         self.model = model
         self.train_losses = train_losses
         self.test_loss = test_loss
         self.baseline_loss = baseline_loss
+        self.train_samples = make_grid(train_samples)
+        if test_samples is not None:
+            self.test_samples = make_grid(test_samples)
+        else:
+            self.test_samples = None
 
     def dump_metrics(self, path: Path):
         metrics = {
@@ -46,73 +58,81 @@ class TrainArtifact:
         with path.open("wb") as f:
             dill.dump(self.model, f)
 
+    def dump_train_samples(self, path: Path) -> Image:
+        self._make_samples_grid(self.train_samples)
+        plt.savefig(path)
+
+    def dump_test_samples(self, path: Path) -> Image:
+        self._make_samples_grid(self.test_samples)
+        plt.savefig(path)
+
+    def dump_loss_plot(self, path: Path):
+        _, ax = plt.subplots(figsize=(10, 10))
+        ax.plot(self.train_losses)
+        plt.savefig(path)
+
+    def _make_samples_grid(self, images: torch.Tensor) -> plt.Figure:
+        grid = make_grid(images).detach().cpu()
+        fig, ax = plt.subplots(1, 1)
+        ax.imshow(F.to_pil_image(grid))
+        ax.set(xticklabels=[], yticklabels=[], xticks=[], yticks=[])
+
+        return fig
+
 
 class Trainer:
 
     CRITERION = nn.MSELoss()
-    LOG_EVERY = 10
+    LOG_EVERY = 1
     LOGGER = get_logger("Trainer")
 
     def __init__(self) -> None:
         self.encoder_blocks = [
-            networks.ConvBlock(
-                in_channels=3,
-                num_hidden_layers=3,
-                out_channels=8,
-                initializer=nn.MaxPool2d(2),
-                padding=1,
+            nn.Conv2d(
+                in_channels=3, out_channels=16, kernel_size=4, stride=2, padding=1
             ),
-            networks.ConvBlock(
-                in_channels=8,
-                num_hidden_layers=3,
-                out_channels=8,
-                initializer=nn.MaxPool2d(2),
-                padding=1,
+            nn.BatchNorm2d(16),
+            nn.ReLU6(),
+            nn.Conv2d(
+                in_channels=16, out_channels=32, kernel_size=4, stride=2, padding=1
             ),
-            networks.ConvBlock(
-                in_channels=8,
-                num_hidden_layers=3,
-                out_channels=8,
-                initializer=nn.MaxPool2d(2),
-                padding=1,
+            nn.BatchNorm2d(32),
+            nn.ReLU6(),
+            nn.Conv2d(
+                in_channels=32, out_channels=64, kernel_size=4, stride=2, padding=1
             ),
-            networks.ConvBlock(
-                in_channels=8,
-                num_hidden_layers=3,
-                out_channels=8,
-                initializer=nn.MaxPool2d(2),
-                padding=1,
+            nn.BatchNorm2d(64),
+            nn.ReLU6(),
+            nn.Conv2d(
+                in_channels=64, out_channels=128, kernel_size=4, stride=2, padding=1
             ),
+            nn.BatchNorm2d(128),
+            nn.ReLU6(),
+            nn.Flatten(),
+            nn.Linear(in_features=128 * 16 * 16, out_features=128),
         ]
         self.decoder_blocks = [
-            networks.ConvBlock(
-                in_channels=8,
-                num_hidden_layers=3,
-                out_channels=8,
-                initializer=nn.UpsamplingNearest2d(scale_factor=2),
-                padding=1,
+            nn.Linear(in_features=128, out_features=128 * 16 * 16),
+            nn.Unflatten(1, (128, 16, 16)),
+            nn.ConvTranspose2d(
+                in_channels=128, out_channels=64, kernel_size=4, stride=2, padding=1
             ),
-            networks.ConvBlock(
-                in_channels=8,
-                num_hidden_layers=3,
-                out_channels=8,
-                initializer=nn.UpsamplingNearest2d(scale_factor=2),
-                padding=1,
+            nn.BatchNorm2d(64),
+            nn.ReLU6(),
+            nn.ConvTranspose2d(
+                in_channels=64, out_channels=32, kernel_size=4, stride=2, padding=1
             ),
-            networks.ConvBlock(
-                in_channels=8,
-                num_hidden_layers=3,
-                out_channels=8,
-                initializer=nn.UpsamplingNearest2d(scale_factor=2),
-                padding=1,
+            nn.BatchNorm2d(32),
+            nn.ReLU6(),
+            nn.ConvTranspose2d(
+                in_channels=32, out_channels=16, kernel_size=4, stride=2, padding=1
             ),
-            networks.ConvBlock(
-                in_channels=8,
-                num_hidden_layers=3,
-                out_channels=3,
-                initializer=nn.UpsamplingNearest2d(scale_factor=2),
-                padding=1,
+            nn.BatchNorm2d(16),
+            nn.ReLU6(),
+            nn.ConvTranspose2d(
+                in_channels=16, out_channels=3, kernel_size=4, stride=2, padding=1
             ),
+            nn.Sigmoid(),
         ]
 
     def get_data(
@@ -121,8 +141,8 @@ class Trainer:
         train_images, test_images = datasets.TrainTestSplitPaths.get_split(
             train_size=train_size
         )
-        train_dataset = datasets.ImageDataset(train_images)
-        test_dataset = datasets.ImageDataset(test_images)
+        train_dataset = datasets.ImageDataset(train_images[:1])
+        test_dataset = datasets.ImageDataset(test_images[:1])
         train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
         test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=True)
 
@@ -136,12 +156,8 @@ class Trainer:
         epochs: int = 10,
         device: Literal["cpu", "cuda"] = "cpu",
     ) -> TrainArtifact:
-        encoder = networks.Encoder(
-            conv_blocks=self.encoder_blocks, adapter_shape=(8, 16, 16)
-        )
-        decoder = networks.Decoder(
-            conv_blocks=self.decoder_blocks, adapter_shape=(8, 16, 16)
-        )
+        encoder = networks.Coder(modules=self.encoder_blocks)
+        decoder = networks.Coder(modules=self.decoder_blocks)
         autoencoder = networks.AutoEncoder(
             encoder=encoder, decoder=decoder, device=device
         )
@@ -163,7 +179,7 @@ class Trainer:
         optimizer = Adam(lr=lr, params=autoencoder.parameters())
         for epoch in range(1, epochs + 1):
             epoch_loss = 0.0
-            for original in train_loader:
+            for original in tqdm(train_loader):
                 optimizer.zero_grad()
                 reconstructed = autoencoder(original)
                 batch_loss = self.CRITERION(reconstructed, original.to(device))
@@ -189,11 +205,20 @@ class Trainer:
         else:
             test_loss = None
 
+        for i in train_loader:
+            train_samples = autoencoder(i.clone())[:25]
+            break
+        for i in test_loader:
+            test_samples = autoencoder(i.clone())[:25]
+            break
+
         artifact = TrainArtifact(
             model=autoencoder,
             train_losses=train_losses,
             baseline_loss=baseline_loss,
             test_loss=test_loss,
+            train_samples=train_samples,
+            test_samples=test_samples,
         )
 
         return artifact
