@@ -1,6 +1,5 @@
 """Networks module for image translator."""
 
-from functools import reduce
 from typing import Generator, List, Literal, Tuple
 
 import torch
@@ -10,104 +9,23 @@ from image_translator.utils.constants import Variables
 from image_translator.utils.utils import get_logger
 
 
-class ConvBlock(nn.Module):
-    def __init__(
-        self,
-        in_channels: int,
-        num_hidden_layers: int,
-        out_channels: int,
-        initializer: nn.Module = nn.Identity(),
-        final: nn.Module = nn.Identity(),
-        kernel_size: int = 3,
-        **kwargs
-    ):
-        super().__init__()
-        input_layer = [
-            nn.Conv2d(
-                in_channels=in_channels,
-                out_channels=out_channels,
-                kernel_size=kernel_size,
-                **kwargs,
-            ),
-            nn.BatchNorm2d(out_channels),
-            nn.ReLU(),
-        ]
-        hidden_layers: List[nn.Module] = []
-        for _ in range(num_hidden_layers):
-            hidden_layers.append(
-                nn.Conv2d(
-                    in_channels=out_channels,
-                    out_channels=out_channels,
-                    kernel_size=kernel_size,
-                    **kwargs,
-                )
-            )
-            hidden_layers.append(nn.BatchNorm2d(out_channels))
-            hidden_layers.append(nn.ReLU())
+class Coder(nn.Module):
 
-        self.mainline = nn.Sequential(initializer, *input_layer, *hidden_layers, final)
-
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
-        out = x.clone()
-        return self.mainline(out)
-
-
-class Encoder(nn.Module):
-
-    def __init__(
-        self,
-        conv_blocks: List[ConvBlock],
-        adapter_shape: Tuple[int, int, int],
-        latent_dimensions: int = Variables.LATENT_DIMENSIONS,
-        *args,
-        **kwargs
-    ):
+    def __init__(self, modules: List[nn.Module], *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.mainline = nn.Sequential(*conv_blocks)
-        adapter_size = reduce(lambda a, b: a * b, adapter_shape)
-
-        self.fc = nn.Sequential(
-            nn.Flatten(),
-            nn.Linear(in_features=adapter_size, out_features=latent_dimensions),
-        )
+        self.mainline = nn.Sequential(*modules)
 
     def forward(self, x):
         main = self.mainline(x)
-        out = self.fc(main)
-        return out
+        return main
 
 
-class Decoder(nn.Module):
-
-    def __init__(
-        self,
-        conv_blocks: List[ConvBlock],
-        adapter_shape: Tuple[int, int, int],
-        latent_dimensions: int = Variables.LATENT_DIMENSIONS,
-        *args,
-        **kwargs
-    ) -> None:
-        super().__init__(*args, **kwargs)
-        self.adapter_shape = adapter_shape
-        adapter_size = reduce(lambda a, b: a * b, adapter_shape)
-        self.adapter = nn.Linear(latent_dimensions, adapter_size)
-        self.mainline = nn.Sequential(
-            *conv_blocks,
-            nn.Sigmoid(),
-        )
-
-    def forward(self, x):
-        adapted = self.adapter(x).view(-1, *self.adapter_shape)
-        out = self.mainline(adapted)
-
-        return out
-
-
-class AutoEncoder:
+class AutoEncoder(nn.Module):
 
     def __init__(
-        self, encoder: Encoder, decoder: Decoder, device: Literal["cpu", "cuda"] = "cpu"
+        self, encoder: Coder, decoder: Coder, device: Literal["cpu", "cuda"] = "cpu"
     ) -> None:
+        super().__init__()
         self.encoder = encoder.to(device=device)
         self.decoder = decoder.to(device=device)
         self.device = device
