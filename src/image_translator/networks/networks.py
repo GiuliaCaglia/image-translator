@@ -1,15 +1,32 @@
 """Networks module for image translator."""
 
+from __future__ import annotations
+
+from pathlib import Path
 from typing import Generator, List, Literal, Tuple
 
 import torch
+import yaml
 from torch import nn
 
-from image_translator.utils.constants import Variables
-from image_translator.utils.utils import get_logger
+from image_translator.utils.constants import PARAMS, TYPE
+from image_translator.utils.utils import CONFIG_ELEMENTS, get_logger
 
 
 class Coder(nn.Module):
+
+    @classmethod
+    def from_config(cls, path: Path) -> Coder:
+        # Open Yaml
+        with path.open("r", encoding="utf-8") as f:
+            config = yaml.safe_load(f)
+
+        sequence = []
+        for layer in config:
+            next_layer = CONFIG_ELEMENTS[layer[TYPE]](**layer.get(PARAMS, {}))
+            sequence.append(next_layer)
+
+        return cls(sequence)
 
     def __init__(self, modules: List[nn.Module], *args, **kwargs):
         super().__init__(*args, **kwargs)
