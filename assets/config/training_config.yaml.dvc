@@ -1,5 +1,5 @@
 outs:
-- md5: a6e7391dcbab35c05128f8a3d01cbe26
-  size: 118
+- md5: 1faf6f58a9ab35cf008476d71bc1206c
+  size: 116
   hash: md5
   path: training_config.yaml
