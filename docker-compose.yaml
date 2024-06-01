@@ -13,6 +13,31 @@ services:
       - MINIO_ROOT_USER=${MINIO_ROOT_USER}
       - MINIO_ROOT_PASSWORD=${MINIO_ROOT_PASSWORD}
 
+  postgres:
+    image: quay.io/sclorg/postgresql-15-c9s:latest
+    environment:
+      - POSTGRESQL_USER=${POSTGRES_USER}
+      - POSTGRESQL_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRESQL_DATABASE=mlflow
+      - POSTGRESQL_ADMIN_PASSWORD=${POSTGRESQL_ADMIN_PASSWORD}
+    ports:
+      - "5432:5432"
+    volumes:
+      - ${POSTGRES_MOUNT_POINT}:/var/lib/pgsql/data:Z
+
+  mlflow:
+    image: mlflow-server:latest
+    build: ./services/
+    ports:
+      - "5000:5000"
+    volumes:
+      - ${MLFLOW_MOUNT_POINT}:/home/mlflow-user/mlflow:Z
+    environment:
+      - MLFLOW_ARTIFACT_ROOT=/home/mlflow-user/mlflow/mlartifacts
+      - MLFLOW_RUNS_DIR=/home/mlflow-user/mlflow/mlruns
+    depends_on:
+      - postgres
+
 volumes:
   minio_data:
     driver: local
@@ -20,3 +45,15 @@ volumes:
       type: none
       o: bind
       device: ${MINIO_VOLUME_MOUNTPOINT}
+  postgres_data:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ${POSTGRES_MOUNT_POINT}
+  mlflow_data:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ${MLFLOW_MOUNT_POINT}

@@ -2,7 +2,7 @@
 
 import json
 from pathlib import Path
-from typing import List, Optional, Tuple
+from typing import Dict, List, Optional, Tuple, Union
 
 import dill
 import matplotlib.pyplot as plt
@@ -39,11 +39,14 @@ class TrainArtifact:
         else:
             self.test_samples = None
 
-    def dump_metrics(self, path: Path):
-        metrics = {
+    def get_metrics(self) -> Dict[str, Union[float, List[float], None]]:
+        return {
             "train_losses": self.train_losses,
             "test_loss": self.test_loss,
         }
+
+    def dump_metrics(self, path: Path):
+        metrics = self.get_metrics()
         path = Path(path)
         path.parent.mkdir(exist_ok=True, parents=True)
 

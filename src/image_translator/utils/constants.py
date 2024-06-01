@@ -29,3 +29,5 @@ class Variables:
 
 TYPE = "type"
 PARAMS = "params"
+MLFLOW_URI_KEY = "MLFLOW_URI"
+EXPERIMENT_NAME_KEY = "MLFLOW_EXPERIMENT_NAME"
