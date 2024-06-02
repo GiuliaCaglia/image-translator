@@ -1,5 +1,5 @@
 outs:
-- md5: a0d15dbcaa6b789c72037edefa4bca64
+- md5: 3d1c66a8a070b711a29418ed7bac7c41
   size: 971
   hash: md5
   path: decoder_config.yaml
