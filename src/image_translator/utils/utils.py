@@ -8,7 +8,7 @@ from pathlib import Path
 from typing import Literal, Type
 
 import yaml
-from torch import Tensor, nn
+from torch import nn
 from torch.optim import Adam
 from torch.optim.optimizer import Optimizer
 

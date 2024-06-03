@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Generator, List, Literal, Tuple
+from typing import Generator, List, Literal
 
 import torch
 import yaml

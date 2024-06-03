@@ -10,7 +10,6 @@ import torch
 import torchvision.transforms.functional as F
 from PIL import Image
 from torch import nn
-from torch.optim import Adam
 from torch.utils.data.dataloader import DataLoader
 from torchvision.utils import make_grid
 from tqdm import tqdm
