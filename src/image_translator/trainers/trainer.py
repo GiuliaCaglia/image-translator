@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt
 import torch
 import torchvision.transforms.functional as F
 from PIL import Image
-from torch import GradScaler, autocast, nn
+from torch import nn
 from torch.utils.data.dataloader import DataLoader
 from torchvision.utils import make_grid
 from tqdm import tqdm
@@ -90,8 +90,6 @@ class Trainer:
         self.decoder = networks.Coder.from_config(Paths.DECODER_CONFIG)
         self.training_params = TrainingParams.load_yaml(Paths.TRAIN_CONFIG)
 
-        self.scaler = GradScaler(device=self.training_params.device)
-
     def get_data(self, train_size: float = 0.9) -> Tuple[DataLoader, DataLoader]:
         train_images, test_images = datasets.TrainTestSplitPaths.get_split(
             train_size=train_size
@@ -127,16 +125,12 @@ class Trainer:
             epoch_loss = 0.0
             for original in train_loader:
                 optimizer.zero_grad()
-                with autocast(
-                    device_type=self.training_params.device, dtype=torch.float16
-                ):
-                    reconstructed = autoencoder(original)
-                    batch_loss = self.training_params.loss_function(
-                        reconstructed, original.to(self.training_params.device)
-                    )
-                self.scaler.scale(batch_loss).backward()
-                self.scaler.step(optimizer)
-                self.scaler.update()
+                reconstructed = autoencoder(original)
+                batch_loss = self.training_params.loss_function(
+                    reconstructed, original.to(self.training_params.device)
+                )
+                batch_loss.backward()
+                optimizer.step()
                 epoch_loss += float(batch_loss) / len(original)
 
             if epoch % self.LOG_EVERY == 0:
