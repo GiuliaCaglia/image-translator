@@ -37,5 +37,6 @@ def train():
         train_artifacts.dump_train_samples(Paths.TRAIN_SAMPLES)
         train_artifacts.dump_test_samples(Paths.TEST_SAMPLES)
         train_artifacts.dump_loss_plot(Paths.LOSS_PLOT)
+        train_artifacts.dump_summary(Paths.SUMMARY)
         mlflow.log_artifacts(Paths.RESULTS)
         mlflow.pytorch.log_model(train_artifacts.model, "autoencoder")

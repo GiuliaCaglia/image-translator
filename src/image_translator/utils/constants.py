@@ -16,6 +16,7 @@ class Paths:
     TRAIN_SAMPLES = RESULTS.joinpath("train_samples.jpg")
     TEST_SAMPLES = RESULTS.joinpath("test_samples.jpg")
     LOSS_PLOT = RESULTS.joinpath("loss_plot.png")
+    SUMMARY = RESULTS.joinpath("summary.txt")
 
     CONFIG = ASSETS / "config"
     ENCODER_CONFIG = CONFIG / "encoder_config.yaml"

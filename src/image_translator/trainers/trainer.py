@@ -11,6 +11,7 @@ import torchvision.transforms.functional as F
 from PIL import Image
 from torch import nn
 from torch.utils.data.dataloader import DataLoader
+from torchsummary import summary
 from torchvision.utils import make_grid
 from tqdm import tqdm
 
@@ -26,6 +27,7 @@ class TrainArtifact:
         model: nn.Module,
         train_losses: List[float],
         train_samples: torch.Tensor,
+        model_summary: str,
         test_loss: Optional[float] = None,
         test_samples: Optional[torch.Tensor] = None,
     ) -> None:
@@ -37,6 +39,8 @@ class TrainArtifact:
             self.test_samples = make_grid(test_samples)
         else:
             self.test_samples = None
+
+        self.model_summary = model_summary
 
     def get_metrics(self) -> Dict[str, Union[float, List[float], None]]:
         return {
@@ -79,6 +83,10 @@ class TrainArtifact:
 
         return fig
 
+    def dump_summary(self, path: Path):
+        with path.open("w", encoding="utf-8") as f:
+            f.write(self.model_summary)
+
 
 class Trainer:
 
@@ -116,6 +124,7 @@ class Trainer:
             decoder=self.decoder,
             device=self.training_params.device,
         )
+        model_summary = str(summary(autoencoder, (3, 256, 256)))
         train_losses = []
         optimizer = self.training_params.optimizer(
             lr=self.training_params.learning_rate, params=autoencoder.parameters()
@@ -166,6 +175,7 @@ class Trainer:
             test_loss=test_loss,
             train_samples=train_samples,
             test_samples=test_samples,
+            model_summary=model_summary,
         )
 
         return artifact

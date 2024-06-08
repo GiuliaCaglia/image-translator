@@ -15,6 +15,7 @@ from torch.optim.optimizer import Optimizer
 CONFIG_ELEMENTS = {
     "conv": nn.Conv2d,
     "batchnorm": nn.BatchNorm2d,
+    "relu": nn.ReLU,
     "relu6": nn.ReLU6,
     "linear": nn.Linear,
     "flatten": nn.Flatten,
