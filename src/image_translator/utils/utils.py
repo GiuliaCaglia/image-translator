@@ -16,6 +16,7 @@ CONFIG_ELEMENTS = {
     "conv": nn.Conv2d,
     "batchnorm": nn.BatchNorm2d,
     "relu6": nn.ReLU6,
+    "relu": nn.ReLU,
     "linear": nn.Linear,
     "flatten": nn.Flatten,
     "sigmoid": nn.Sigmoid,

@@ -1,5 +1,5 @@
 outs:
-- md5: c042d52d767d6d262f8a605c2a03e93a
-  size: 887
+- md5: ae08052d1e69fb2bad52f26018f82479
+  size: 869
   hash: md5
   path: encoder_config.yaml

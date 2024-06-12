@@ -19,7 +19,7 @@ mlflow.set_experiment(experiment_name=os.getenv(EXPERIMENT_NAME_KEY))
 @click.command()
 def train():
     with mlflow.start_run():
-        trainer = t.Trainer()
+        trainer = t.CheckpointedTrainer()
         train_data, test_data = trainer.get_data()
         train_artifacts = trainer.fit(train_data, test_data)
 

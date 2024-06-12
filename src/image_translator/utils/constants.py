@@ -1,5 +1,6 @@
 """Constants for Image Translator."""
 
+from enum import Enum
 from pathlib import Path
 
 COMPETITION_NAME = "gan-getting-started"
@@ -10,6 +11,8 @@ class Paths:
     ASSETS = ROOT.joinpath("assets")
     IMAGES = ASSETS.joinpath("images")
     RESULTS = ASSETS.joinpath("results")
+
+    CHECKPOINTS = ASSETS / "checkpoints"
 
     MODEL = RESULTS.joinpath("model.pkl")
     METRICS = RESULTS.joinpath("metrics.json")
@@ -31,3 +34,5 @@ TYPE = "type"
 PARAMS = "params"
 MLFLOW_URI_KEY = "MLFLOW_URI"
 EXPERIMENT_NAME_KEY = "MLFLOW_EXPERIMENT_NAME"
+MODE_KEY = "mode"
+NAME_KEY = "name"

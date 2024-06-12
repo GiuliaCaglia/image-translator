@@ -1,0 +1,5 @@
+outs:
+- md5: e753f9da023ceeb5947a6edf120f5c9e
+  size: 3168
+  hash: md5
+  path: decoder_conv3

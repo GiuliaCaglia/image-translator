@@ -1,0 +1,5 @@
+outs:
+- md5: 93bb8fa6270071c3a568207651230600
+  size: 9867
+  hash: md5
+  path: encoder_conv2

@@ -2,7 +2,7 @@
 
 import json
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple, Union
+from typing import Dict, List, Optional, Tuple, Type, Union
 
 import dill
 import matplotlib.pyplot as plt
@@ -84,10 +84,11 @@ class Trainer:
 
     LOG_EVERY = 10
     LOGGER = get_logger("Trainer")
+    CODER_TYPE: Type[networks.Coder] = networks.Coder
 
     def __init__(self) -> None:
-        self.encoder = networks.Coder.from_config(Paths.ENCODER_CONFIG)
-        self.decoder = networks.Coder.from_config(Paths.DECODER_CONFIG)
+        self.encoder = self.CODER_TYPE.from_config(Paths.ENCODER_CONFIG)
+        self.decoder = self.CODER_TYPE.from_config(Paths.DECODER_CONFIG)
         self.training_params = TrainingParams.load_yaml(Paths.TRAIN_CONFIG)
 
     def get_data(self, train_size: float = 0.9) -> Tuple[DataLoader, DataLoader]:
@@ -168,4 +169,17 @@ class Trainer:
             test_samples=test_samples,
         )
 
+        return artifact
+
+
+class CheckpointedTrainer(Trainer):
+    CODER_TYPE: Type[networks.Coder] = networks.CheckpointedCoder
+
+    def fit(
+        self, train_loader: DataLoader, test_loader: DataLoader | None = None
+    ) -> TrainArtifact:
+        artifact = super().fit(train_loader, test_loader)
+
+        self.encoder.dump()
+        self.decoder.dump()
         return artifact

@@ -1,0 +1,5 @@
+outs:
+- md5: 3d8cfd92b9178348dace19d625df3266
+  size: 268445082
+  hash: md5
+  path: encoder_fc1
